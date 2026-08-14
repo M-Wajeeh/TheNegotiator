@@ -1,0 +1,6 @@
+{
+  "name": "AI Negotiation Platform",
+  "description": "An automated service negotiation workspace orchestrating multi-agent pipelines with LangGraph, FastAPI, and Celery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
