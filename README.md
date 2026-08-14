@@ -50,45 +50,32 @@ Negotiating service contracts (such as HVAC repairs, plumbing, enterprise moving
 ## 📐 System Architecture
 
 ```mermaid
-graph TD
-    User([User / Procurement Manager]) -->|Uploads Invoices & Service Spec| Frontend[Next.js 15 Frontend UI]
-    Frontend -->|REST API / WebSocket| BackendAPI[FastAPI Gateway :8000]
+flowchart TD
+    User["User / Procurement Manager"] -->|Uploads Invoices & Service Spec| Frontend["Next.js 15 Frontend UI"]
+    Frontend -->|REST API / WebSocket| BackendAPI["FastAPI Gateway (:8000)"]
     
-    subgraph Orchestration [LangGraph Execution Engine]
-        BackendAPI --> Intake[Intake Node]
-        Intake --> DocParser[Document Parser / Vision OCR]
-        DocParser --> Discovery[Vendor Discovery Node - Tavily API]
-        Discovery --> Planning[Strategic Call Planning]
-        
-        Planning -->|LangGraph Send API - Fan Out| Subgraphs
-        
-        subgraph Subgraphs [Parallel Vendor Subgraphs]
-            V1[Vendor A Subgraph: Voice / Email]
-            V2[Vendor B Subgraph: Voice / Email]
-            V3[Vendor C Subgraph: Voice / Email]
-        end
-        
-        Subgraphs -->|Fan In / Reduce| QuoteAnalysis[Quote Analysis Node]
-        QuoteAnalysis --> RecNode[Recommendation Engine]
-        RecNode -->|Conditional Edge| HumanGate{Requires Human Approval?}
-        HumanGate -->|Approved| ReportNode[Executive Report Generator]
-        HumanGate -->|Pending| UIApproval[Human-in-the-Loop Gate]
-        UIApproval --> ReportNode
+    subgraph LG ["LangGraph Execution Pipeline"]
+        BackendAPI --> N1["01: Intake & Validation"]
+        N1 --> N2["02: Document OCR Parser"]
+        N2 --> N3["03: Vendor Discovery (Tavily)"]
+        N3 --> N4["04: Strategic Call Planning"]
+        N4 -->|LangGraph Send API Fan-Out| VFlow["05: Parallel Vendor Flow (Voice/Email)"]
+        VFlow -->|Fan-In / Aggregate| N6["06: Quote Normalization & Analysis"]
+        N6 --> N7["07: Recommendation Engine"]
+        N7 --> N8{"08: High-Value Human Gate?"}
+        N8 -->|Approved| N9["09: Executive Report Generator"]
+        N8 -->|Requires Review| UIApproval["Human-in-the-Loop Review"]
+        UIApproval --> N9
     end
     
-    subgraph Storage & Infrastructure
-        BackendAPI --- Postgres[(PostgreSQL 15)]
-        BackendAPI --- Redis[(Redis 7 Cache / Broker)]
-        BackendAPI --- Celery[Celery Async Workers]
-        BackendAPI --- GCS[(Google Cloud Storage)]
-    end
-    
-    subgraph AI Models & APIs
-        Intake --- Gemini[Google Gemini 2.5 Flash / Vision]
-        DocParser --- Gemini
-        Subgraphs --- OpenAI[OpenAI GPT-4o / Realtime]
-        Subgraphs --- ElevenLabs[ElevenLabs TTS / Voice]
-        Subgraphs --- Gmail[Google Gmail API]
+    subgraph Integrations ["Services, Storage & AI Models"]
+        BackendAPI --> Postgres[("PostgreSQL 15 (Async DB)")]
+        BackendAPI --> Redis[("Redis 7 + Celery Workers")]
+        BackendAPI --> GCS[("Google Cloud Storage")]
+        N2 -.-> Gemini["Google Gemini 2.5 Vision"]
+        VFlow -.-> OpenAI["OpenAI GPT-4o / Realtime"]
+        VFlow -.-> ElevenLabs["ElevenLabs Voice Engine"]
+        VFlow -.-> Gmail["Gmail API (Auto RFQs)"]
     end
 ```
 
